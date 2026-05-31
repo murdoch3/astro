@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Natal Chart</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anonymous+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            color: #00BFFF;
+            background-color: #000011;
+            background-image: url("../img/stars3.gif");
+            font-family: 'Anonymous Pro', monospace;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(to bottom right, #000033, #000011);
+            border: 2px solid #00BFFF;
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+
+        header h1 { margin: 0; font-size: 2.5em; text-align: center; }
+        header h1 a { color: #00BFFF; text-decoration: none; }
+
+        nav {
+            background: linear-gradient(to bottom right, #000033, #000011);
+            border: 2px solid #00BFFF;
+            margin-bottom: 20px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        nav a { color: #00CED1; text-decoration: none; margin: 0 10px; transition: color 0.3s; }
+        nav a:hover { color: #FFF; }
+
+        section {
+            background: linear-gradient(to bottom right, #000033, #000011);
+            border: 2px solid #00BFFF;
+            margin-bottom: 20px;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        h2 {
+            margin: 0 0 16px 0;
+            font-size: 1.3em;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            border-bottom: 1px solid #003355;
+            padding-bottom: 8px;
+        }
+
+        h3 {
+            margin: 20px 0 8px 0;
+            font-size: 1.05em;
+            color: #00CED1;
+            letter-spacing: 0.08em;
+        }
+
+        a { color: #00CED1; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* ── Table of Contents ── */
+        #toc { }
+        #toc ol { margin: 0; padding-left: 1.4em; }
+        #toc li { margin-bottom: 4px; }
+        #toc a { color: #00CED1; }
+
+        /* ── Loading state ── */
+        #loading {
+            text-align: center;
+            padding: 40px 20px;
+            font-size: 1.1em;
+            letter-spacing: 0.1em;
+        }
+        #loading .spinner {
+            display: inline-block;
+            width: 18px; height: 18px;
+            border: 2px solid #003355;
+            border-top-color: #00BFFF;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Chart SVG wrapper ── */
+        #chart-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        #chart-wrapper svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* ── Subheading with glyph ── */
+        .chart-title {
+            text-align: center;
+            font-size: 1em;
+            letter-spacing: 0.12em;
+            margin-bottom: 4px;
+            color: #00CED1;
+        }
+
+        /* ── Tables ── */
+        .table-container {
+            max-width: 100%;
+            overflow-x: auto;
+            margin-bottom: 1.2em;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #00BFFF;
+            background: linear-gradient(to bottom right, #000033, #000011);
+            border: 2px solid #00BFFF;
+        }
+
+        th, td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #002244;
+            font-size: 0.9em;
+        }
+
+        th {
+            background-color: rgba(0, 191, 255, 0.08);
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #00CED1;
+        }
+
+        tr:hover { background-color: rgba(0, 191, 255, 0.04); }
+        td.glyph { font-size: 1.1em; text-align: center; }
+
+        /* ── Counts grid ── */
+        .counts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .count-box {
+            border: 1px solid #003355;
+            padding: 10px 14px;
+            background: rgba(0,0,50,0.4);
+        }
+        .count-box .label {
+            font-size: 0.75em;
+            color: #006080;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .count-box .value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #00BFFF;
+        }
+        .count-box .detail {
+            font-size: 0.8em;
+            color: #004466;
+            margin-top: 2px;
+        }
+
+        /* ── Alan Leo sections ── */
+        .placeholder {
+            color: #004466;
+            font-style: italic;
+            border-left: 2px solid #002244;
+            padding-left: 12px;
+            margin: 12px 0;
+        }
+
+        .section-chapters { list-style: none; padding: 0; }
+        .section-chapters li {
+            padding: 6px 0;
+            border-bottom: 1px solid #001833;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+        .section-chapters li:last-child { border-bottom: none; }
+        .chap-num { color: #004466; font-size: 0.8em; min-width: 3em; }
+        .chap-title { flex: 1; }
+        .chap-tag {
+            font-size: 0.75em;
+            color: #006080;
+            margin-left: 8px;
+        }
+
+        /* ── Back link ── */
+        .back-link {
+            display: inline-block;
+            margin-bottom: 12px;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 10px; }
+            header h1 { font-size: 2em; }
+            th, td { padding: 6px 8px; font-size: 0.82em; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1><a href="/">Murdoch's Blog</a></h1>
+    </header>
+
+    <nav>
+        <a href="/">Home</a>
+        <a href="/posts">Posts</a>
+        <a href="/natal_form.html">← New Chart</a>
+    </nav>
+
+    <main id="main-content">
+        <section>
+            <div id="loading"><span class="spinner"></span> Casting the chart…</div>
+        </section>
+    </main>
+</div>
+
+<script type="module">
+// ════════════════════════════════════════════════════════════
+//  Constants & helpers
+// ════════════════════════════════════════════════════════════
+
+const SIGNS = [
+    { name:'Aries',       sym:'♈', glyph:'♈', element:'Fire',  mode:'Cardinal' },
+    { name:'Taurus',      sym:'♉', glyph:'♉', element:'Earth', mode:'Fixed'    },
+    { name:'Gemini',      sym:'♊', glyph:'♊', element:'Air',   mode:'Mutable'  },
+    { name:'Cancer',      sym:'♋', glyph:'♋', element:'Water', mode:'Cardinal' },
+    { name:'Leo',         sym:'♌', glyph:'♌', element:'Fire',  mode:'Fixed'    },
+    { name:'Virgo',       sym:'♍', glyph:'♍', element:'Earth', mode:'Mutable'  },
+    { name:'Libra',       sym:'♎', glyph:'♎', element:'Air',   mode:'Cardinal' },
+    { name:'Scorpio',     sym:'♏', glyph:'♏', element:'Water', mode:'Fixed'    },
+    { name:'Sagittarius', sym:'♐', glyph:'♐', element:'Fire',  mode:'Mutable'  },
+    { name:'Capricorn',   sym:'♑', glyph:'♑', element:'Earth', mode:'Cardinal' },
+    { name:'Aquarius',    sym:'♒', glyph:'♒', element:'Air',   mode:'Fixed'    },
+    { name:'Pisces',      sym:'♓', glyph:'♓', element:'Water', mode:'Mutable'  },
+];
+
+const PLANETS = [
+    { id: 0,  name:'Sun',     sym:'☉' },
+    { id: 1,  name:'Moon',    sym:'☽' },
+    { id: 2,  name:'Mercury', sym:'☿' },
+    { id: 3,  name:'Venus',   sym:'♀' },
+    { id: 4,  name:'Mars',    sym:'♂' },
+    { id: 5,  name:'Jupiter', sym:'♃' },
+    { id: 6,  name:'Saturn',  sym:'♄' },
+    { id: 7,  name:'Uranus',  sym:'♅' },
+    { id: 8,  name:'Neptune', sym:'♆' },
+    { id: 9,  name:'Pluto',   sym:'♇' },
+    { id: 10, name:'Mean Node', sym:'☊' },
+];
+
+const ASPECTS = [
+    { name:'Conjunction', angle:0,   orb:8, sym:'☌' },
+    { name:'Opposition',  angle:180, orb:8, sym:'☍' },
+    { name:'Trine',       angle:120, orb:7, sym:'△' },
+    { name:'Square',      angle:90,  orb:7, sym:'□' },
+    { name:'Sextile',     angle:60,  orb:5, sym:'⚹' },
+    { name:'Quincunx',    angle:150, orb:3, sym:'⚻' },
+    { name:'Semi-sextile',angle:30,  orb:2, sym:'⚺' },
+];
+
+function lonToSign(lon) {
+    const idx = Math.floor(((lon % 360) + 360) % 360 / 30);
+    const deg = ((lon % 360) + 360) % 360 % 30;
+    return { sign: SIGNS[idx], deg, idx };
+}
+
+function formatDMS(lon) {
+    const norm = ((lon % 360) + 360) % 360;
+    const { sign, deg } = lonToSign(norm);
+    const d = Math.floor(deg);
+    const m = Math.floor((deg - d) * 60);
+    const s = Math.floor(((deg - d) * 60 - m) * 60);
+    return `${d}°${m.toString().padStart(2,'0')}'${s.toString().padStart(2,'0')}" ${sign.sym} ${sign.name}`;
+}
+
+function getAspects(positions) {
+    const results = [];
+    const keys = Object.keys(positions);
+    for (let i = 0; i < keys.length; i++) {
+        for (let j = i + 1; j < keys.length; j++) {
+            const a = positions[keys[i]];
+            const b = positions[keys[j]];
+            let diff = Math.abs(a - b) % 360;
+            if (diff > 180) diff = 360 - diff;
+            for (const asp of ASPECTS) {
+                if (Math.abs(diff - asp.angle) <= asp.orb) {
+                    results.push({
+                        p1: keys[i], p2: keys[j],
+                        aspect: asp,
+                        orb: Math.abs(diff - asp.angle).toFixed(1)
+                    });
+                }
+            }
+        }
+    }
+    return results;
+}
+
+// ════════════════════════════════════════════════════════════
+//  SVG chart drawing
+// ════════════════════════════════════════════════════════════
+
+function drawChart(planetData, cusps, asc) {
+    const W = 500, H = 500, CX = 250, CY = 250;
+    const R_OUTER = 220, R_SIGN_IN = 170;
+    const R_HOUSE = 152, R_PLANET = 122, R_ASPECT = 80;
+    const CYAN = '#00BFFF', TEAL = '#00CED1', DIM = '#003355', DARK = '#000022';
+
+    // ── Coordinate system ──────────────────────────────────────
+    // Standard Western chart: ASC at 9-o'clock (180° in SVG terms),
+    // ecliptic longitude increases counter-clockwise.
+    //
+    // SVG angles: 0° = right (3 o'clock), increase clockwise.
+    // Ecliptic lon: 0° = Aries, increase counter-clockwise on chart.
+    //
+    // Conversion: svgAngle = 180° - (eclipticLon - asc)
+    //   • subtracting asc rotates so ASC maps to 0 in our frame
+    //   • negating flips CW→CCW
+    //   • adding 180° shifts 0 from right to left (9 o'clock)
+    const ecl2svg = lon => {
+        const deg = 180 - (((lon - asc) % 360) + 360) % 360;
+        return deg * Math.PI / 180;
+    };
+    const point = (r, lon) => {
+        const a = ecl2svg(lon);
+        return [CX + r * Math.cos(a), CY + r * Math.sin(a)];
+    };
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"
+        style="background:#000011;font-family:'Anonymous Pro',monospace;">
+    <defs>
+        <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+            <stop offset="0%"   stop-color="#000033"/>
+            <stop offset="100%" stop-color="#000011"/>
+        </radialGradient>
+    </defs>
+    <circle cx="${CX}" cy="${CY}" r="${R_OUTER}" fill="url(#bg)" stroke="${CYAN}" stroke-width="1.5"/>
+    <circle cx="${CX}" cy="${CY}" r="${R_SIGN_IN}" fill="none" stroke="${DIM}" stroke-width="1"/>
+    <circle cx="${CX}" cy="${CY}" r="${R_HOUSE}" fill="none" stroke="${DIM}" stroke-width="0.8"/>
+    <circle cx="${CX}" cy="${CY}" r="${R_ASPECT}" fill="${DARK}" stroke="${DIM}" stroke-width="0.8"/>
+    `;
+
+    // ── Sign band ──────────────────────────────────────────────
+    // Each sign starts at its actual ecliptic longitude (i * 30°)
+    // and its glyph sits at the midpoint (i * 30 + 15)°.
+    for (let i = 0; i < 12; i++) {
+        const boundaryLon = i * 30;  // 0, 30, 60 ... 330
+        const [x1, y1] = point(R_SIGN_IN, boundaryLon);
+        const [x2, y2] = point(R_OUTER,   boundaryLon);
+        svg += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${DIM}" stroke-width="1"/>`;
+
+        const midLon = i * 30 + 15;
+        const [gx, gy] = point((R_SIGN_IN + R_OUTER) / 2 + 2, midLon);
+        const el = SIGNS[i].element;
+        const col = el==='Fire'?'#FF6644':el==='Earth'?'#88BB44':el==='Air'?'#AADDFF':'#4499FF';
+        svg += `<text x="${gx.toFixed(1)}" y="${gy.toFixed(1)}" text-anchor="middle" dominant-baseline="central"
+            font-size="14" fill="${col}" opacity="0.9">${SIGNS[i].glyph}</text>`;
+    }
+
+    // ── House cusps ────────────────────────────────────────────
+    for (let i = 0; i < 12; i++) {
+        const cuspLon = cusps[i];
+        const [x1, y1] = point(R_ASPECT, cuspLon);
+        const [x2, y2] = point(R_HOUSE,  cuspLon);
+        const isAngle = i % 3 === 0;
+        svg += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"
+            stroke="${isAngle ? CYAN : TEAL}" stroke-width="${isAngle ? 1.5 : 0.7}" opacity="${isAngle ? 1 : 0.6}"/>`;
+
+        // House number at midpoint between this cusp and the next
+        const nextLon = cusps[(i + 1) % 12];
+        let span = (((nextLon - cuspLon) % 360) + 360) % 360;
+        const midLon = cuspLon + span / 2;
+        const [nx, ny] = point(R_HOUSE - 14, midLon);
+        svg += `<text x="${nx.toFixed(1)}" y="${ny.toFixed(1)}" text-anchor="middle" dominant-baseline="central"
+            font-size="9" fill="${DIM}" font-style="italic">${i + 1}</text>`;
+    }
+
+    // ── Aspect lines ───────────────────────────────────────────
+    const posMap = {};
+    for (const p of PLANETS) {
+        if (planetData[p.name]) posMap[p.name] = planetData[p.name].lon;
+    }
+    const aspects = getAspects(posMap);
+    for (const asp of aspects) {
+        const [x1, y1] = point(R_ASPECT, posMap[asp.p1]);
+        const [x2, y2] = point(R_ASPECT, posMap[asp.p2]);
+        const col = asp.aspect.name === 'Conjunction' ? CYAN
+                  : asp.aspect.name === 'Opposition'  ? '#FF4444'
+                  : asp.aspect.name === 'Trine'       ? '#44FF88'
+                  : asp.aspect.name === 'Square'      ? '#FF8844'
+                  : asp.aspect.name === 'Sextile'     ? '#44AAFF'
+                  : '#334455';
+        svg += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"
+            stroke="${col}" stroke-width="0.7" opacity="0.5"/>`;
+    }
+
+    // ── Planet glyphs ──────────────────────────────────────────
+    // Collect display angles to nudge overlapping symbols
+    const placed = []; // { lon, displayLon }
+    for (const p of PLANETS) {
+        if (!planetData[p.name]) continue;
+        const lon = planetData[p.name].lon;
+
+        // Find a display longitude that doesn't clash
+        let displayLon = lon;
+        for (const prev of placed) {
+            let diff = (((displayLon - prev.displayLon) % 360) + 360) % 360;
+            if (diff > 180) diff = 360 - diff;
+            if (diff < 7) displayLon += 8;
+        }
+        placed.push({ lon, displayLon });
+
+        const [px, py] = point(R_PLANET, displayLon);
+        // Tick from house ring to planet position
+        const [tx1, ty1] = point(R_HOUSE, lon);
+        const [tx2, ty2] = point(R_PLANET - 10, displayLon);
+        svg += `<line x1="${tx1.toFixed(1)}" y1="${ty1.toFixed(1)}" x2="${tx2.toFixed(1)}" y2="${ty2.toFixed(1)}"
+            stroke="${DIM}" stroke-width="0.5" opacity="0.5"/>`;
+        svg += `<text x="${px.toFixed(1)}" y="${py.toFixed(1)}" text-anchor="middle" dominant-baseline="central"
+            font-size="13" fill="${CYAN}">${p.sym}</text>`;
+    }
+
+    // ── Angle labels ───────────────────────────────────────────
+    const labelAngles = [
+        { label:'ASC', lon: asc },
+        { label:'DSC', lon: asc + 180 },
+        { label:'MC',  lon: cusps[9] },
+        { label:'IC',  lon: cusps[3] },
+    ];
+    for (const la of labelAngles) {
+        const [lx, ly] = point(R_OUTER + 12, la.lon);
+        svg += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="central"
+            font-size="9" fill="${TEAL}" letter-spacing="1">${la.label}</text>`;
+    }
+
+    svg += `</svg>`;
+    return svg;
+}
+
+// ════════════════════════════════════════════════════════════
+//  Main: parse URL params, run Swiss Ephemeris, render page
+// ════════════════════════════════════════════════════════════
+
+const params = new URLSearchParams(window.location.search);
+const name      = params.get('name')      || 'Native';
+const birthdate = params.get('birthdate') || '1990-01-01';
+const birthtime = params.get('birthtime') || '12:00';
+const lat       = parseFloat(params.get('lat')  || '0');
+const lon       = parseFloat(params.get('lon')  || '0');
+const tz        = parseFloat(params.get('tz')   || '0');
+const housesys  = params.get('housesys') || 'P';
+
+// Parse birth date/time
+const [yr, mo, dy] = birthdate.split('-').map(Number);
+const [hr, mn]     = birthtime.split(':').map(Number);
+const hourUT = hr + mn / 60 - tz;
+
+async function main() {
+    // Load Alan Leo texts alongside the ephemeris
+    let AL = {};
+    try {
+        const r = await fetch('alan_leo_texts.json');
+        if (r.ok) AL = await r.json();
+    } catch(e) { /* texts not yet present — placeholders will show */ }
+
+    try {
+        // Load swisseph-wasm directly from jsDelivr GitHub CDN — no build step needed
+        const { default: SwissEph } = await import(
+            'https://cdn.jsdelivr.net/gh/prolaxu/swisseph-wasm@main/src/swisseph.js'
+        );
+
+        const swe = new SwissEph();
+        await swe.initSwissEph();
+
+        // Julian Day in UT
+        const jd = swe.julday(yr, mo, dy, hourUT);
+
+        // Hardcode flag values (SEFLG_SWIEPH=2, SEFLG_SPEED=256)
+        // Don't rely on swe.SEFLG_* instance properties — they may not be defined
+        const FLAGS = 2 | 256; // 258
+
+        // Hardcode planet ids — Swiss Ephemeris standard numbering
+        const planetIds = {
+            Sun:         0,
+            Moon:        1,
+            Mercury:     2,
+            Venus:       3,
+            Mars:        4,
+            Jupiter:     5,
+            Saturn:      6,
+            Uranus:      7,
+            Neptune:     8,
+            Pluto:       9,
+            'Mean Node': 10,
+        };
+
+        // Calculate planetary positions
+        // calc_ut returns array [longitude, latitude, distance, speedLon, ...]
+        // or occasionally an object {longitude, longitudeSpeed, ...}
+        const planetData = {};
+        for (const [pname, pid] of Object.entries(planetIds)) {
+            try {
+                const pos = swe.calc_ut(jd, pid, FLAGS);
+                let lon, speed;
+                if (Array.isArray(pos)) {
+                    lon   = pos[0];
+                    speed = pos[3] !== undefined ? pos[3] : 0;
+                } else if (pos && typeof pos === 'object') {
+                    lon   = pos.longitude !== undefined ? pos.longitude : pos[0];
+                    speed = pos.longitudeSpeed !== undefined ? pos.longitudeSpeed : (pos[3] || 0);
+                } else { continue; }
+                if (lon == null || isNaN(lon)) continue;
+                const info = lonToSign(lon);
+                planetData[pname] = { lon, sign: info.sign, deg: info.deg, speed, retro: speed < 0 };
+            } catch(e) { console.warn('Planet calc failed:', pname, e.message); }
+        }
+
+        // Calculate house cusps
+        // houses() returns { cusps: [...], ascmc: [asc, mc, ...] }
+        // cusps may be 13-element (index 0 unused) or 12-element depending on version
+        const houseResult = swe.houses(jd, lat, lon, housesys);
+        const rawCusps = Array.from(houseResult.cusps);
+        // If 13 elements the first is a dummy 0; if 12 it's already correct
+        const cusps = rawCusps.length === 13 ? rawCusps.slice(1) : rawCusps.slice(0, 12);
+        const asc   = houseResult.ascmc[0];
+        const mc    = houseResult.ascmc[1];
+
+        swe.close();
+
+        // Assign planets to houses
+        for (const p of Object.values(planetData)) {
+            p.house = whichHouse(p.lon, cusps);
+        }
+
+        renderPage(planetData, cusps, asc, mc, AL);
+
+    } catch(err) {
+        document.getElementById('main-content').innerHTML = `
+            <section>
+                <h2>⚠ Calculation Error</h2>
+                <p>Could not load the Swiss Ephemeris module. This may be due to a network issue or browser restriction.</p>
+                <pre style="font-size:0.8em;color:#666;white-space:pre-wrap;">${err.message}\n\n${err.stack||''}</pre>
+                <p><a href="natal_form.html">← Back to form</a></p>
+            </section>`;
+    }
+}
+
+// Determine which house (1–12) a longitude falls in given the 12 cusp longitudes
+function whichHouse(lon, cusps) {
+    const norm = n => ((n % 360) + 360) % 360;
+    const p = norm(lon);
+    for (let i = 0; i < 12; i++) {
+        const c1 = norm(cusps[i]);
+        const c2 = norm(cusps[(i + 1) % 12]);
+        const inHouse = c1 <= c2
+            ? p >= c1 && p < c2
+            : p >= c1 || p < c2;   // wraps through 0°
+        if (inHouse) return i + 1;
+    }
+    return 1;
+}
+
+// Look up Alan Leo text or return a styled placeholder
+function alText(AL, section, key) {
+    const text = AL?.[section]?.[key];
+    if (text) return `<p style="line-height:1.8;text-align:justify;">${text}</p>`;
+    return `<p class="placeholder">[${section} / ${key}] — text to be added from Alan Leo's <em>The Key to Your Own Nativity</em>.</p>`;
+}
+
+// Look up an aspect text. Tries both planet orderings.
+function alAspect(AL, p1, p2, aspType) {
+    const k1 = `${p1}_${p2}_${aspType}`;
+    const k2 = `${p2}_${p1}_${aspType}`;
+    const text = AL?.aspects?.[k1] || AL?.aspects?.[k2];
+    if (text) return `<p style="line-height:1.8;text-align:justify;">${text}</p>`;
+    return '';  // silently omit missing aspect entries
+}
+
+// Classify an angular difference as Conjunction / Benefic / Adverse
+function classifyAspect(diff) {
+    const d = Math.abs(diff) % 360;
+    const n = d > 180 ? 360 - d : d;
+    if (n <= 10)  return 'Conjunction';
+    if (n >= 50  && n <= 70)  return 'Benefic';   // sextile
+    if (n >= 110 && n <= 130) return 'Benefic';   // trine
+    if (n >= 80  && n <= 100) return 'Adverse';   // square
+    if (n >= 170 && n <= 190) return 'Adverse';   // opposition
+    if (n >= 140 && n <= 155) return 'Adverse';   // quincunx (minor)
+    return null;
+}
+
+// Build all detected aspects for a set of planet positions
+function buildAspectReadings(AL, planetData) {
+    const order = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune'];
+    const results = [];
+    for (let i = 0; i < order.length; i++) {
+        for (let j = i + 1; j < order.length; j++) {
+            const p1 = order[i], p2 = order[j];
+            if (!planetData[p1] || !planetData[p2]) continue;
+            const diff = planetData[p1].lon - planetData[p2].lon;
+            const type = classifyAspect(diff);
+            if (!type) continue;
+            const text = alAspect(AL, p1, p2, type);
+            if (text) results.push({ p1, p2, type, text });
+        }
+    }
+    return results;
+}
+
+function renderPage(planetData, cusps, asc, mc, AL) {
+    const ascSign  = lonToSign(asc);
+    const mcSign   = lonToSign(mc);
+
+    // Count elements & modes
+    const elemCount = { Fire:0, Earth:0, Air:0, Water:0 };
+    const modeCount = { Cardinal:0, Fixed:0, Mutable:0 };
+    for (const p of PLANETS) {
+        if (!planetData[p.name]) continue;
+        elemCount[planetData[p.name].sign.element]++;
+        modeCount[planetData[p.name].sign.mode]++;
+    }
+
+    const svg = drawChart(planetData, cusps, asc);
+    const aspects = getAspects(Object.fromEntries(PLANETS.filter(p=>planetData[p.name]).map(p=>[p.name, planetData[p.name].lon])));
+
+    // ── Determine ruling planet (traditional by rising sign) ──
+    const RULERS = {
+        Aries:'Mars', Taurus:'Venus', Gemini:'Mercury', Cancer:'Moon',
+        Leo:'Sun', Virgo:'Mercury', Libra:'Venus', Scorpio:'Mars',
+        Sagittarius:'Jupiter', Capricorn:'Saturn', Aquarius:'Saturn', Pisces:'Jupiter'
+    };
+    const rulingPlanetName = RULERS[ascSign.sign.name];
+
+    document.getElementById('main-content').innerHTML = `
+
+    <!-- ── Page title ── -->
+    <section>
+        <a class="back-link" href="natal_form.html">← Cast a new chart</a>
+        <h2>✦ Nativity of ${name}</h2>
+        <p style="margin:0;color:#006080;font-size:0.9em;">
+            ${birthdate} · ${birthtime} · ${lat.toFixed(4)}°N ${lon.toFixed(4)}°E · UTC${tz >= 0 ? '+' : ''}${tz}
+        </p>
+        <p style="margin-top:8px;">
+            <strong>Sun:</strong> ${planetData.Sun ? formatDMS(planetData.Sun.lon) : '?'} &nbsp;&nbsp;
+            <strong>Moon:</strong> ${planetData.Moon ? formatDMS(planetData.Moon.lon) : '?'}<br>
+            <strong>Ascendant:</strong> ${formatDMS(asc)} &nbsp;&nbsp;
+            <strong>MC:</strong> ${formatDMS(mc)}<br>
+            <strong>Rising sign:</strong> ${ascSign.sign.name} &nbsp;&nbsp;
+            <strong>Sun sign:</strong> ${planetData.Sun ? planetData.Sun.sign.name : '?'} &nbsp;&nbsp;
+            <strong>Ruling planet:</strong> ${rulingPlanetName}
+        </p>
+    </section>
+
+    <!-- ── Table of Contents ── -->
+    <section id="toc">
+        <h2>Table of Contents</h2>
+        <ol>
+            <li><a href="#chart">I. The Natal Chart Wheel</a></li>
+            <li><a href="#planet-table">II. Planetary Positions</a></li>
+            <li><a href="#house-table">III. House Cusps</a></li>
+            <li><a href="#aspect-table">IV. Aspects</a></li>
+            <li><a href="#counts">V. Triplicities, Quadruplicities &amp; Polarities</a></li>
+            <li><a href="#alan-leo">VI. Horoscope Readings (Alan Leo)</a>
+                <ol>
+                    <li><a href="#al-s1">§1 — The Ruling Planet</a></li>
+                    <li><a href="#al-s2">§2 — Individuality</a></li>
+                    <li><a href="#al-s3">§3 — Personality</a></li>
+                    <li><a href="#al-s4">§4 — Mentality</a></li>
+                    <li><a href="#al-s5">§5 — The Houses</a></li>
+                    <li><a href="#al-s6">§6 — Summary</a></li>
+                    <li><a href="#al-s7">§7 — Progressions</a></li>
+                </ol>
+            </li>
+        </ol>
+    </section>
+
+    <!-- ── Chart ── -->
+    <section id="chart">
+        <h2>I. The Natal Chart Wheel</h2>
+        <p class="chart-title">${ascSign.sign.glyph} ${ascSign.sign.name} Rising</p>
+        <div id="chart-wrapper">${svg}</div>
+        <p style="font-size:0.78em;color:#003355;text-align:center;margin-top:8px;">
+            Aspect lines: <span style="color:#00BFFF">☌ Conjunction</span> &nbsp;
+            <span style="color:#FF4444">☍ Opposition</span> &nbsp;
+            <span style="color:#44FF88">△ Trine</span> &nbsp;
+            <span style="color:#FF8844">□ Square</span> &nbsp;
+            <span style="color:#44AAFF">⚹ Sextile</span>
+        </p>
+    </section>
+
+    <!-- ── Planetary positions ── -->
+    <section id="planet-table">
+        <h2>II. Planetary Positions</h2>
+        <div class="table-container">
+        <table>
+            <thead><tr>
+                <th></th><th>Planet</th><th>Position</th><th>House</th><th>Sign</th><th>Element</th><th>Mode</th><th>R</th>
+            </tr></thead>
+            <tbody>
+            ${PLANETS.filter(p=>planetData[p.name]).map(p => {
+                const d = planetData[p.name];
+                return `<tr>
+                    <td class="glyph">${p.sym}</td>
+                    <td>${p.name}</td>
+                    <td style="white-space:nowrap">${formatDMS(d.lon)}</td>
+                    <td style="text-align:center">${d.house}</td>
+                    <td>${d.sign.glyph} ${d.sign.name}</td>
+                    <td>${d.sign.element}</td>
+                    <td>${d.sign.mode}</td>
+                    <td style="text-align:center">${d.retro ? '<span style="color:#FF6644">℞</span>' : ''}</td>
+                </tr>`;
+            }).join('')}
+            </tbody>
+        </table>
+        </div>
+    </section>
+
+    <!-- ── House cusps ── -->
+    <section id="house-table">
+        <h2>III. House Cusps</h2>
+        <div class="table-container">
+        <table>
+            <thead><tr><th>House</th><th>Cusp</th><th>Sign</th><th>Planets</th></tr></thead>
+            <tbody>
+            ${cusps.map((c, i) => {
+                const si = lonToSign(c);
+                const planetsInHouse = PLANETS.filter(p => planetData[p.name] && planetData[p.name].house === i+1);
+                return `<tr>
+                    <td>${i+1}${i===0?' (ASC)':i===3?' (IC)':i===6?' (DSC)':i===9?' (MC)':''}</td>
+                    <td style="white-space:nowrap">${formatDMS(c)}</td>
+                    <td>${si.sign.glyph} ${si.sign.name}</td>
+                    <td>${planetsInHouse.map(p=>p.sym+' '+p.name).join(', ')}</td>
+                </tr>`;
+            }).join('')}
+            </tbody>
+        </table>
+        </div>
+    </section>
+
+    <!-- ── Aspects ── -->
+    <section id="aspect-table">
+        <h2>IV. Aspects</h2>
+        <div class="table-container">
+        <table>
+            <thead><tr><th></th><th>Planet 1</th><th>Aspect</th><th>Planet 2</th><th>Orb</th></tr></thead>
+            <tbody>
+            ${aspects.length ? aspects.map(a => `<tr>
+                <td class="glyph">${a.aspect.sym}</td>
+                <td>${a.p1}</td>
+                <td>${a.aspect.name}</td>
+                <td>${a.p2}</td>
+                <td>${a.orb}°</td>
+            </tr>`).join('') : '<tr><td colspan="5" style="color:#004466;font-style:italic">No major aspects within orbs.</td></tr>'}
+            </tbody>
+        </table>
+        </div>
+    </section>
+
+    <!-- ── Counts ── -->
+    <section id="counts">
+        <h2>V. Triplicities, Quadruplicities &amp; Polarities</h2>
+
+        <h3>Triplicities (Elements)</h3>
+        <div class="counts-grid">
+            ${['Fire','Earth','Air','Water'].map(el => `
+            <div class="count-box">
+                <div class="label">${el}</div>
+                <div class="value">${elemCount[el]}</div>
+                <div class="detail">${['Fire','Earth','Air','Water'].map(e=>PLANETS.filter(p=>planetData[p.name]&&planetData[p.name].sign.element===e).map(p=>p.sym).join(' ')).filter((_,i)=>['Fire','Earth','Air','Water'][i]===el)[0] || ''}</div>
+            </div>`).join('')}
+        </div>
+
+        <h3>Quadruplicities (Modes)</h3>
+        <div class="counts-grid">
+            ${['Cardinal','Fixed','Mutable'].map(mode => `
+            <div class="count-box">
+                <div class="label">${mode}</div>
+                <div class="value">${modeCount[mode]}</div>
+                <div class="detail">${PLANETS.filter(p=>planetData[p.name]&&planetData[p.name].sign.mode===mode).map(p=>p.sym).join(' ')}</div>
+            </div>`).join('')}
+        </div>
+
+        <h3>Polarities</h3>
+        <div class="counts-grid">
+            <div class="count-box">
+                <div class="label">Positive (Fire + Air)</div>
+                <div class="value">${elemCount.Fire + elemCount.Air}</div>
+            </div>
+            <div class="count-box">
+                <div class="label">Negative (Earth + Water)</div>
+                <div class="value">${elemCount.Earth + elemCount.Water}</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         ALAN LEO SECTIONS
+         ══════════════════════════════════════════════════════ -->
+    <section id="alan-leo">
+        <h2>VI. Horoscope Readings</h2>
+        <p style="font-size:0.85em;color:#004466;">
+            Interpretive text drawn from Alan Leo, <em>The Key to Your Own Nativity</em> (1910).
+            Public domain. Placeholder sections marked below will be populated as texts are keyed in.
+        </p>
+    </section>
+
+    <!-- § 1 — Ruling Planet -->
+    <section id="al-s1">
+        <h2>§1 — The Ruling Planet</h2>
+        <ul class="section-chapters">
+            <li><span class="chap-num">Ch. I</span>   <span class="chap-title">The Ascendant and the Rising Sign</span> <span class="chap-tag">[${ascSign.sign.name}]</span></li>
+            <li><span class="chap-num">Ch. II</span>  <span class="chap-title">The Ruling Planet</span>                 <span class="chap-tag">[${rulingPlanetName}]</span></li>
+            <li><span class="chap-num">Ch. III</span> <span class="chap-title">The Position of the Ruling Planet in the Houses</span> <span class="chap-tag">[House ${planetData[rulingPlanetName]?.house || '?'}]</span></li>
+            <li><span class="chap-num">Ch. IV</span>  <span class="chap-title">The Position in the Signs of the Sun as Ruler</span>   <span class="chap-tag">[${planetData.Sun?.sign.name || '?'}]</span></li>
+            <li><span class="chap-num">Ch. V</span>   <span class="chap-title">The Moon</span>         <span class="chap-tag">[${planetData.Moon?.sign.name || '?'}]</span></li>
+            <li><span class="chap-num">Ch. VI</span>  <span class="chap-title">Mercury</span>          <span class="chap-tag">[${planetData.Mercury?.sign.name || '?'}]</span></li>
+            <li><span class="chap-num">Ch. VII</span> <span class="chap-title">Venus</span>            <span class="chap-tag">[${planetData.Venus?.sign.name || '?'}]</span></li>
+            <li><span class="chap-num">Ch. VIII</span><span class="chap-title">Mars</span>             <span class="chap-tag">[${planetData.Mars?.sign.name || '?'}]</span></li>
+            <li><span class="chap-num">Ch. IX</span>  <span class="chap-title">Jupiter</span>          <span class="chap-tag">[${planetData.Jupiter?.sign.name || '?'}]</span></li>
+            <li><span class="chap-num">Ch. X</span>   <span class="chap-title">Saturn</span>           <span class="chap-tag">[${planetData.Saturn?.sign.name || '?'}]</span></li>
+            <li><span class="chap-num">Ch. XI</span>  <span class="chap-title">The House-Position of Uranus</span>  <span class="chap-tag">[House ${planetData.Uranus?.house || '?'}]</span></li>
+            <li><span class="chap-num">Ch. XII</span> <span class="chap-title">Neptune</span>          <span class="chap-tag">[House ${planetData.Neptune?.house || '?'}]</span></li>
+        </ul>
+        <h3>Ch. I — The Ascendant: ${ascSign.sign.name} Rising</h3>
+        ${alText(AL, 'rising_sign', ascSign.sign.name)}
+        <h3>Personal Appearance</h3>
+        ${alText(AL, 'rising_sign_appearance', ascSign.sign.name)}
+        <h3>Ch. II — The Ruling Planet: ${rulingPlanetName}</h3>
+        ${alText(AL, 'ruling_planet', rulingPlanetName)}
+        <h3>Ch. III — Position of the Ruling Planet in the Houses: House ${planetData[rulingPlanetName]?.house || '?'}</h3>
+        ${alText(AL, 'ruling_planet_in_house', String(planetData[rulingPlanetName]?.house || ''))}
+        <h3>Ch. IV–X — The Ruling Planet (${rulingPlanetName}) in ${planetData[rulingPlanetName]?.sign.name || '?'}</h3>
+        ${ (() => {
+            const rulerKey = {
+                Sun: 'sun_as_ruler_in_sign', Moon: 'moon_as_ruler_in_sign',
+                Mercury: 'mercury_as_ruler_in_sign', Venus: 'venus_as_ruler_in_sign',
+                Mars: 'mars_as_ruler_in_sign', Jupiter: 'jupiter_as_ruler_in_sign',
+                Saturn: 'saturn_as_ruler_in_sign'
+            }[rulingPlanetName];
+            return rulerKey ? alText(AL, rulerKey, planetData[rulingPlanetName]?.sign.name || '') : '<p class="placeholder">Uranus/Neptune as ruler — text to be added.</p>';
+        })() }
+        <h3>Ch. XI — Uranus in House ${planetData.Uranus?.house || '?'}</h3>
+        ${alText(AL, 'uranus_in_house', String(planetData.Uranus?.house || ''))}
+        <h3>Ch. XII — Neptune in House ${planetData.Neptune?.house || '?'}</h3>
+        ${alText(AL, 'neptune_in_house', String(planetData.Neptune?.house || ''))}
+    </section>
+
+    <!-- § 2 — Individuality -->
+    <section id="al-s2">
+        <h2>§2 — Individuality</h2>
+        <ul class="section-chapters">
+            <li><span class="chap-num">Ch. XIII</span><span class="chap-title">Individual Characteristics</span> <span class="chap-tag">[Sun in ${planetData.Sun?.sign.name || '?'}, House ${planetData.Sun?.house || '?'}]</span></li>
+        </ul>
+        <h3>Ch. XIII — Sun in ${planetData.Sun?.sign.name || '?'}</h3>
+        ${alText(AL, 'sun_in_sign', planetData.Sun?.sign.name || '')}
+    </section>
+
+    <!-- § 3 — Personality -->
+    <section id="al-s3">
+        <h2>§3 — Personality</h2>
+        <ul class="section-chapters">
+            <li><span class="chap-num">Ch. XIV</span><span class="chap-title">Personal Characteristics</span>    <span class="chap-tag">[${ascSign.sign.name} Rising]</span></li>
+            <li><span class="chap-num">Ch. XV</span> <span class="chap-title">The Moon's House-Position</span>   <span class="chap-tag">[Moon in House ${planetData.Moon?.house || '?'}]</span></li>
+        </ul>
+        <h3>Ch. XIV — Personal Characteristics: Moon in ${planetData.Moon?.sign.name || '?'}</h3>
+        ${alText(AL, 'moon_in_sign', planetData.Moon?.sign.name || '')}
+        <h3>Ch. XV — Moon's House-Position: House ${planetData.Moon?.house || '?'}</h3>
+        ${alText(AL, 'moon_in_house', String(planetData.Moon?.house || ''))}
+    </section>
+
+    <!-- § 4 — Mentality -->
+    <section id="al-s4">
+        <h2>§4 — Mentality</h2>
+        <h3>Ch. XVI — Mental Qualifications: Mercury in ${planetData.Mercury?.sign.name || '?'}</h3>
+        ${alText(AL, 'mercury_in_sign', planetData.Mercury?.sign.name || '')}
+        <h3>Ch. XVII — Mercury's House-Position: House ${planetData.Mercury?.house || '?'}</h3>
+        ${alText(AL, 'mercury_in_house', String(planetData.Mercury?.house || ''))}
+        <h3>Ch. XVIII — Positions and Aspects of the Sun, Moon and Planets</h3>
+        ${ (() => {
+            const aspectReadings = buildAspectReadings(AL, planetData);
+            if (!aspectReadings.length) return '<p class="placeholder">No major aspects detected within orbs.</p>';
+            return aspectReadings.map(a =>
+                `<h4 style="color:#00CED1;margin:16px 0 4px;font-size:0.95em;">
+                    ${a.p1} ${a.type === 'Conjunction' ? '☌' : a.type === 'Benefic' ? '△' : '□'} ${a.p2}
+                    <span style="color:#004466;font-weight:normal;font-size:0.85em;">(${a.type})</span>
+                 </h4>${a.text}`
+            ).join('');
+        })() }
+    </section>
+
+    <!-- § 5 — The Houses -->
+    <section id="al-s5">
+        <h2>§5 — The Houses of the Horoscope</h2>
+        <p style="font-size:0.85em;color:#004466;">
+            Each house is interpreted by the planet occupying it, or — when empty — by the mode (Cardinal/Fixed/Mutable)
+            of the sign on its cusp.
+        </p>
+
+        ${ (() => {
+            // Helper: given a house number (1-12), find the governing planet name or sign mode
+            function houseKey(houseNum) {
+                const RULERS = {
+                    Aries:'Mars', Taurus:'Venus', Gemini:'Mercury', Cancer:'Moon',
+                    Leo:'Sun', Virgo:'Mercury', Libra:'Venus', Scorpio:'Mars',
+                    Sagittarius:'Jupiter', Capricorn:'Saturn', Aquarius:'Saturn', Pisces:'Jupiter'
+                };
+                // Planet in this house?
+                for (const p of PLANETS) {
+                    if (planetData[p.name] && planetData[p.name].house === houseNum) {
+                        return p.name;
+                    }
+                }
+                // Fall back to sign mode on cusp
+                const cuspSign = lonToSign(cusps[houseNum - 1]);
+                return cuspSign.sign.mode; // 'Cardinal', 'Fixed', or 'Mutable'
+            }
+
+            const h2key  = houseKey(2);
+            const h3key  = houseKey(3);
+            const h4key  = houseKey(4);
+            const h5key  = houseKey(5);
+            const h6key  = houseKey(6);
+            const h7key  = houseKey(7);
+            const h8key  = houseKey(8);
+            const h9key  = houseKey(9);
+            const h10key = houseKey(10);
+            const h11key = houseKey(11);
+            const h12key = houseKey(12);
+
+            // 11th house — element fallback instead of mode
+            function friendsKey(houseNum) {
+                for (const p of PLANETS) {
+                    if (planetData[p.name] && planetData[p.name].house === houseNum) return p.name;
+                }
+                return lonToSign(cusps[houseNum - 1]).sign.element; // Fire/Earth/Air/Water
+            }
+            const h11friends = friendsKey(11);
+
+            return \`
+            <h3>Ch. XIX — Finance (House 2: \${h2key})</h3>
+            \${alText(AL, 'finance_planet', h2key)}
+            <h3>Ch. XX — Travel (House 3: \${h3key})</h3>
+            \${alText(AL, 'travel_planet', h3key)}
+            <h3>Ch. XXI — Environment (House 4: \${h4key})</h3>
+            \${alText(AL, 'environment_planet', h4key)}
+            <h3>Ch. XXII — Enterprise (House 5: \${h5key})</h3>
+            \${alText(AL, 'enterprise_planet', h5key)}
+            <h3>Ch. XXIII — Sickness (House 6: \${h6key})</h3>
+            \${alText(AL, 'sickness_planet', h6key)}
+            <h3>Ch. XXIV — Marriage (House 7: \${h7key})</h3>
+            \${alText(AL, 'marriage_planet', h7key)}
+            <h3>Ch. XXV — Marriage Prospects: Venus in \${planetData.Venus?.sign.name || '?'}</h3>
+            \${alText(AL, 'venus_marriage_in_sign', planetData.Venus?.sign.name || '')}
+            <h3>Ch. XXVI — Legacies (House 8: \${h8key})</h3>
+            \${alText(AL, 'legacies_planet', h8key)}
+            <h3>Ch. XXVII — Philosophy (House 9: \${h9key})</h3>
+            \${alText(AL, 'philosophy_planet', h9key)}
+            <h3>Ch. XXVIII — Profession (House 10: \${h10key})</h3>
+            \${alText(AL, 'profession_planet', h10key)}
+            <h3>Ch. XXIX — Friends (House 11: \${h11friends})</h3>
+            \${alText(AL, 'friends_planet', h11friends)}
+            <h3>Ch. XXX — Occultism (House 12: \${h12key})</h3>
+            \${alText(AL, 'occultism_planet', h12key)}
+            \`;
+        })() }
+    </section>
+
+    <!-- § 6 — Summary -->
+    <section id="al-s6">
+        <h2>§6 — Summary of the Horoscope</h2>
+        <ul class="section-chapters">
+            <li><span class="chap-num">Ch. XXXI</span>  <span class="chap-title">Summaries: Planetary Positions, Triplicities, Quadruplicities</span></li>
+            <li><span class="chap-num">Ch. XXXII</span> <span class="chap-title">Supplementary Paragraphs: Rising Planet, Personal Colouring, General Aspects, Planets in Signs</span></li>
+            <li><span class="chap-num">Ch. XXXIII</span><span class="chap-title">The Polarities — Sun in ${planetData.Sun?.sign.name || '?'}</span></li>
+            <li><span class="chap-num">Ch. XXXIV</span> <span class="chap-title">Explanatory Paragraphs</span></li>
+        </ul>
+        <div class="placeholder">Interpretive text to be filled in from Alan Leo's text.</div>
+    </section>
+
+    <!-- § 7 — Progressions -->
+    <section id="al-s7">
+        <h2>§7 — The Progression of the Horoscope</h2>
+        <ul class="section-chapters">
+            <li><span class="chap-num">Ch. XXXV</span><span class="chap-title">The Future Prospects</span></li>
+        </ul>
+        <p style="font-size:0.85em;color:#004466;margin-top:8px;">
+            Solar aspects, interplanetary (mutual) aspects, lunar positions and aspects.
+        </p>
+        <div class="placeholder">Progressions calculation and interpretive text — to be implemented.</div>
+    </section>
+
+    `;
+}
+
+main();
+</script>
+</body>
+</html>

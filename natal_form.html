@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Natal Chart – Enter Birth Data</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anonymous+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            color: #00BFFF;
+            background-color: #000011;
+            background-image: url("../img/stars3.gif");
+            font-family: 'Anonymous Pro', monospace;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(to bottom right, #000033, #000011);
+            border: 2px solid #00BFFF;
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            text-align: center;
+        }
+
+        header h1 a {
+            color: #00BFFF;
+            text-decoration: none;
+        }
+
+        nav {
+            background: linear-gradient(to bottom right, #000033, #000011);
+            border: 2px solid #00BFFF;
+            margin-bottom: 20px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        nav a {
+            color: #00CED1;
+            text-decoration: none;
+            margin: 0 10px;
+            transition: color 0.3s ease;
+        }
+
+        nav a:hover { color: #FFFFFF; }
+
+        main section {
+            background: linear-gradient(to bottom right, #000033, #000011);
+            border: 2px solid #00BFFF;
+            margin-bottom: 20px;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        h2 {
+            margin-top: 0;
+            margin-bottom: 16px;
+            font-size: 1.4em;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #00CED1;
+            font-size: 0.9em;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            cursor: default;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="time"],
+        input[type="number"],
+        select {
+            width: 100%;
+            background: #000022;
+            border: 1px solid #00BFFF;
+            color: #00BFFF;
+            font-family: 'Anonymous Pro', monospace;
+            font-size: 1em;
+            padding: 8px 12px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="text"]:focus,
+        input[type="date"]:focus,
+        input[type="time"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            border-color: #FFFFFF;
+            box-shadow: 0 0 6px rgba(0, 191, 255, 0.4);
+        }
+
+        /* Fix browser date/time input colour on Chrome */
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.7) sepia(1) saturate(5) hue-rotate(170deg);
+            cursor: pointer;
+        }
+
+        select option {
+            background: #000022;
+            color: #00BFFF;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .hint {
+            font-size: 0.8em;
+            color: #006080;
+            margin-top: 4px;
+        }
+
+        .btn-submit {
+            display: block;
+            width: 100%;
+            margin-top: 24px;
+            padding: 12px;
+            background: linear-gradient(to bottom right, #000033, #000022);
+            border: 2px solid #00BFFF;
+            color: #00BFFF;
+            font-family: 'Anonymous Pro', monospace;
+            font-size: 1.1em;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-submit:hover {
+            background: rgba(0, 191, 255, 0.12);
+            color: #FFFFFF;
+            box-shadow: 0 0 12px rgba(0, 191, 255, 0.35);
+        }
+
+        .field-note {
+            margin-top: 16px;
+            font-size: 0.8em;
+            color: #006080;
+            border-top: 1px solid #001833;
+            padding-top: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 10px; }
+            header h1 { font-size: 2em; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1><a href="/">Murdoch's Blog</a></h1>
+    </header>
+
+    <nav>
+        <a href="/">Home</a>
+        <a href="/posts">Posts</a>
+        <a href="/natal_form.html">Natal Chart</a>
+    </nav>
+
+    <main>
+        <section>
+            <h2>☽ Natal Chart Calculator</h2>
+            <p>Enter your birth details below. All calculations are performed locally in your browser using the Swiss Ephemeris. No data is sent to any server.</p>
+
+            <form id="natal-form">
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" name="name" placeholder="Your name" autocomplete="name">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="birthdate">Birth Date</label>
+                        <input type="date" id="birthdate" name="birthdate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="birthtime">Birth Time</label>
+                        <input type="time" id="birthtime" name="birthtime">
+                        <div class="hint">If unknown, leave blank (noon will be used)</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="location">Birth Location</label>
+                    <input type="text" id="location" name="location" placeholder="City, Country (e.g. Toronto, Canada)" autocomplete="off">
+                    <div class="hint">Used to look up coordinates automatically</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="lat">Latitude</label>
+                        <input type="number" id="lat" name="lat" step="0.0001" min="-90" max="90" placeholder="e.g. 43.6532">
+                    </div>
+                    <div class="form-group">
+                        <label for="lon">Longitude</label>
+                        <input type="number" id="lon" name="lon" step="0.0001" min="-180" max="180" placeholder="e.g. -79.3832">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="timezone">UTC Offset (hours)</label>
+                        <input type="number" id="timezone" name="timezone" step="0.5" min="-12" max="14" placeholder="e.g. -5">
+                        <div class="hint">Standard time offset at birth (not DST-adjusted automatically)</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="housesys">House System</label>
+                        <select id="housesys" name="housesys">
+                            <option value="P" selected>Placidus</option>
+                            <option value="K">Koch</option>
+                            <option value="R">Regiomontanus</option>
+                            <option value="C">Campanus</option>
+                            <option value="E">Equal (Asc)</option>
+                            <option value="W">Whole Sign</option>
+                            <option value="O">Porphyry</option>
+                            <option value="X">Axial rotation / Meridian</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">✦ Cast the Chart ✦</button>
+
+                <div class="field-note">
+                    Tip: you can look up your coordinates and UTC offset at
+                    <a href="https://www.latlong.net/" target="_blank" rel="noopener">latlong.net</a>.
+                    Historic DST rules vary — always verify the UTC offset for your exact birth date and location.
+                </div>
+            </form>
+        </section>
+    </main>
+</div>
+
+<script>
+// Geocode location name via Nominatim (OpenStreetMap) — free, no key required
+const locationInput = document.getElementById('location');
+const latInput = document.getElementById('lat');
+const lonInput = document.getElementById('lon');
+let geocodeTimer = null;
+
+locationInput.addEventListener('input', () => {
+    clearTimeout(geocodeTimer);
+    const q = locationInput.value.trim();
+    if (q.length < 3) return;
+    geocodeTimer = setTimeout(async () => {
+        try {
+            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`;
+            const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+            const data = await res.json();
+            if (data && data.length > 0) {
+                latInput.value = parseFloat(data[0].lat).toFixed(4);
+                lonInput.value = parseFloat(data[0].lon).toFixed(4);
+            }
+        } catch(e) { /* silently fail */ }
+    }, 700);
+});
+
+document.getElementById('natal-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const name      = document.getElementById('name').value.trim() || 'Native';
+    const birthdate = document.getElementById('birthdate').value;
+    const birthtime = document.getElementById('birthtime').value || '12:00';
+    const lat       = parseFloat(document.getElementById('lat').value);
+    const lon       = parseFloat(document.getElementById('lon').value);
+    const tz        = parseFloat(document.getElementById('timezone').value) || 0;
+    const housesys  = document.getElementById('housesys').value;
+
+    if (!birthdate) { alert('Please enter a birth date.'); return; }
+    if (isNaN(lat) || isNaN(lon)) { alert('Please enter or look up valid coordinates.'); return; }
+
+    const params = new URLSearchParams({
+        name, birthdate, birthtime, lat, lon, tz, housesys
+    });
+    window.location.href = 'natal_chart.html?' + params.toString();
+});
+</script>
+</body>
+</html>
