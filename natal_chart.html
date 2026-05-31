@@ -490,7 +490,7 @@ async function main() {
     } catch(e) { /* texts not yet present — placeholders will show */ }
 
     try {
-        // Load swisseph-wasm directly from jsDelivr GitHub CDN — no build step needed
+        // Load swisseph-wasm directly from jsDelivr GitHub CDN
         const { default: SwissEph } = await import(
             'https://cdn.jsdelivr.net/gh/prolaxu/swisseph-wasm@main/src/swisseph.js'
         );
@@ -962,45 +962,129 @@ function renderPage(planetData, cusps, asc, mc, AL) {
             }
             const h11friends = friendsKey(11);
 
-            return \`
-            <h3>Ch. XIX — Finance (House 2: \${h2key})</h3>
-            \${alText(AL, 'finance_planet', h2key)}
-            <h3>Ch. XX — Travel (House 3: \${h3key})</h3>
-            \${alText(AL, 'travel_planet', h3key)}
-            <h3>Ch. XXI — Environment (House 4: \${h4key})</h3>
-            \${alText(AL, 'environment_planet', h4key)}
-            <h3>Ch. XXII — Enterprise (House 5: \${h5key})</h3>
-            \${alText(AL, 'enterprise_planet', h5key)}
-            <h3>Ch. XXIII — Sickness (House 6: \${h6key})</h3>
-            \${alText(AL, 'sickness_planet', h6key)}
-            <h3>Ch. XXIV — Marriage (House 7: \${h7key})</h3>
-            \${alText(AL, 'marriage_planet', h7key)}
-            <h3>Ch. XXV — Marriage Prospects: Venus in \${planetData.Venus?.sign.name || '?'}</h3>
-            \${alText(AL, 'venus_marriage_in_sign', planetData.Venus?.sign.name || '')}
-            <h3>Ch. XXVI — Legacies (House 8: \${h8key})</h3>
-            \${alText(AL, 'legacies_planet', h8key)}
-            <h3>Ch. XXVII — Philosophy (House 9: \${h9key})</h3>
-            \${alText(AL, 'philosophy_planet', h9key)}
-            <h3>Ch. XXVIII — Profession (House 10: \${h10key})</h3>
-            \${alText(AL, 'profession_planet', h10key)}
-            <h3>Ch. XXIX — Friends (House 11: \${h11friends})</h3>
-            \${alText(AL, 'friends_planet', h11friends)}
-            <h3>Ch. XXX — Occultism (House 12: \${h12key})</h3>
-            \${alText(AL, 'occultism_planet', h12key)}
-            \`;
+            const parts = [
+                '<h3>Ch. XIX — Finance (House 2: ' + h2key + ')</h3>' + alText(AL, 'finance_planet', h2key),
+                '<h3>Ch. XX — Travel (House 3: ' + h3key + ')</h3>' + alText(AL, 'travel_planet', h3key),
+                '<h3>Ch. XXI — Environment (House 4: ' + h4key + ')</h3>' + alText(AL, 'environment_planet', h4key),
+                '<h3>Ch. XXII — Enterprise (House 5: ' + h5key + ')</h3>' + alText(AL, 'enterprise_planet', h5key),
+                '<h3>Ch. XXIII — Sickness (House 6: ' + h6key + ')</h3>' + alText(AL, 'sickness_planet', h6key),
+                '<h3>Ch. XXIV — Marriage (House 7: ' + h7key + ')</h3>' + alText(AL, 'marriage_planet', h7key),
+                '<h3>Ch. XXV — Marriage Prospects: Venus in ' + (planetData.Venus?.sign.name || '?') + '</h3>' + alText(AL, 'venus_marriage_in_sign', planetData.Venus?.sign.name || ''),
+                '<h3>Ch. XXVI — Legacies (House 8: ' + h8key + ')</h3>' + alText(AL, 'legacies_planet', h8key),
+                '<h3>Ch. XXVII — Philosophy (House 9: ' + h9key + ')</h3>' + alText(AL, 'philosophy_planet', h9key),
+                '<h3>Ch. XXVIII — Profession (House 10: ' + h10key + ')</h3>' + alText(AL, 'profession_planet', h10key),
+                '<h3>Ch. XXIX — Friends (House 11: ' + h11friends + ')</h3>' + alText(AL, 'friends_planet', h11friends),
+                '<h3>Ch. XXX — Occultism (House 12: ' + h12key + ')</h3>' + alText(AL, 'occultism_planet', h12key),
+            ];
+            return parts.join('');
         })() }
     </section>
 
     <!-- § 6 — Summary -->
     <section id="al-s6">
         <h2>§6 — Summary of the Horoscope</h2>
-        <ul class="section-chapters">
-            <li><span class="chap-num">Ch. XXXI</span>  <span class="chap-title">Summaries: Planetary Positions, Triplicities, Quadruplicities</span></li>
-            <li><span class="chap-num">Ch. XXXII</span> <span class="chap-title">Supplementary Paragraphs: Rising Planet, Personal Colouring, General Aspects, Planets in Signs</span></li>
-            <li><span class="chap-num">Ch. XXXIII</span><span class="chap-title">The Polarities — Sun in ${planetData.Sun?.sign.name || '?'}</span></li>
-            <li><span class="chap-num">Ch. XXXIV</span> <span class="chap-title">Explanatory Paragraphs</span></li>
-        </ul>
-        <div class="placeholder">Interpretive text to be filled in from Alan Leo's text.</div>
+        <h3>Ch. XXXIII — The Polarities: Sun in ${planetData.Sun?.sign.name || '?'}, Moon in ${planetData.Moon?.sign.name || '?'}</h3>
+        ${alText(AL, 'polarities', (planetData.Sun?.sign.name || '') + '_' + (planetData.Moon?.sign.name || ''))}
+        ${ (() => {
+            // ── Ch. XXXI: Planetary Positions ──────────────────────────────
+            // Count planets above/below horizon and rising/setting (east/west)
+            const planetNames = PLANETS.map(p => p.name).filter(n => planetData[n]);
+            const total = planetNames.length;
+            let rising = 0, setting = 0, above = 0, below = 0;
+            for (const n of planetNames) {
+                const lon = planetData[n].lon;
+                // asc already in scope as parameter
+                // Relative to ASC: east = rising side (houses 12,1,2), west = setting (6,7,8)
+                // Above horizon: houses 7-12, below: 1-6
+                const h = planetData[n].house;
+                if (h >= 1 && h <= 6)  below++;  else above++;
+                // Rising = east of meridian but above horizon, or: houses 10,11,12,1,2,3
+                if (h >= 10 || h <= 3) rising++; else setting++;
+            }
+            // Determine dominant position
+            let posKey;
+            if (rising > setting && rising > total/2)       posKey = 'Rising';
+            else if (setting > rising && setting > total/2) posKey = 'Setting';
+            else if (above > below && above > total/2)      posKey = 'Above';
+            else                                             posKey = 'Below';
+
+            // ── Ch. XXXI: Triplicities ──────────────────────────────────────
+            const elementCount = {Fire:0, Earth:0, Air:0, Water:0};
+            for (const n of planetNames) elementCount[planetData[n].sign.element]++;
+            // Sun/Moon tiebreaker
+            const sunEl  = planetData.Sun?.sign.element;
+            const moonEl = planetData.Moon?.sign.element;
+            let topElement = Object.keys(elementCount).reduce((a,b) => {
+                if (elementCount[b] > elementCount[a]) return b;
+                if (elementCount[b] === elementCount[a]) {
+                    const aVotes = (a===sunEl?2:0)+(a===moonEl?1:0);
+                    const bVotes = (b===sunEl?2:0)+(b===moonEl?1:0);
+                    return bVotes >= aVotes ? b : a;
+                }
+                return a;
+            });
+
+            // ── Ch. XXXI: Qualities ─────────────────────────────────────────
+            const modeCount = {Cardinal:0, Fixed:0, Mutable:0};
+            for (const n of planetNames) modeCount[planetData[n].sign.mode]++;
+            const sunMode  = planetData.Sun?.sign.mode;
+            const moonMode = planetData.Moon?.sign.mode;
+            let topMode = Object.keys(modeCount).reduce((a,b) => {
+                if (modeCount[b] > modeCount[a]) return b;
+                if (modeCount[b] === modeCount[a]) {
+                    const aVotes = (a===sunMode?2:0)+(a===moonMode?1:0);
+                    const bVotes = (b===sunMode?2:0)+(b===moonMode?1:0);
+                    return bVotes >= aVotes ? b : a;
+                }
+                return a;
+            });
+
+            // ── Ch. XXXI: Sun/Moon quality combination ──────────────────────
+            // Key is either "SunElement_MoonElement" or "SunMode_MoonMode"
+            const smElKey   = sunEl + '_' + moonEl;
+            const smModeKey = sunMode + '_' + moonMode;
+            // Try element key first (Fire/Air/etc), then mode key (Cardinal/Fixed/etc)
+            const smText = alText(AL, 'sun_moon_quality', smElKey) ||
+                           alText(AL, 'sun_moon_quality', smModeKey);
+
+            // ── Ch. XXXII: Rising planet ────────────────────────────────────
+            // Find planet closest to ASC in houses 12, 1, or 2
+            let risingPlanet = null, risingDist = 999;
+            for (const n of planetNames) {
+                const h = planetData[n].house;
+                if (h === 12 || h === 1 || h === 2) {
+                    // asc already in scope as parameter
+                    let dist = Math.abs(((planetData[n].lon - asc + 360) % 360));
+                    if (dist > 180) dist = 360 - dist;
+                    if (dist < risingDist) { risingDist = dist; risingPlanet = n; }
+                }
+            }
+
+            // ── Ch. XXXII: Personal colouring ───────────────────────────────
+            const moonSignName = planetData.Moon?.sign.name || '';
+
+            // Build output
+            const parts31 = [
+                '<h3>Ch. XXXI — Planetary Positions: ' + posKey + '</h3>',
+                alText(AL, 'planetary_positions', posKey),
+                '<h3>Ch. XXXI — The Triplicities: Majority in ' + topElement + '</h3>',
+                alText(AL, 'triplicity_summary', topElement),
+                '<h3>Ch. XXXI — The Qualities: Majority in ' + topMode + '</h3>',
+                alText(AL, 'quality_summary', topMode),
+                '<h3>Ch. XXXI — Sun &amp; Moon: ' + sunEl + ' / ' + moonEl + '</h3>',
+                smText || '<p class="placeholder">[sun_moon_quality / ' + smElKey + '] — no entry found.</p>',
+            ];
+            const parts32 = risingPlanet ? [
+                '<h3>Ch. XXXII — Rising Planet: ' + risingPlanet + '</h3>',
+                alText(AL, 'rising_planet', risingPlanet),
+                '<h3>Ch. XXXII — Personal Colouring: Moon in ' + moonSignName + '</h3>',
+                alText(AL, 'personal_colouring', moonSignName),
+            ] : [
+                '<p style="color:#004466;font-size:0.85em;">No planet found near the Ascendant (houses 12–2); supplementary paragraphs omitted.</p>',
+            ];
+
+            return parts31.concat(parts32).join('');
+        })() }
     </section>
 
     <!-- § 7 — Progressions -->
