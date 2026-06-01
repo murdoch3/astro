@@ -481,6 +481,197 @@ const [yr, mo, dy] = birthdate.split('-').map(Number);
 const [hr, mn]     = birthtime.split(':').map(Number);
 const hourUT = hr + mn / 60 - tz;
 
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  Secondary progressions: 1 day after birth = 1 year of life
+// ══════════════════════════════════════════════════════════════════════════════
+
+function classifyProgAspect(diff) {
+    const d = ((diff % 360) + 360) % 360;
+    const n = d > 180 ? 360 - d : d;
+    if (n <= 8)  return 'Conjunction';
+    if (n >= 52  && n <= 68)  return 'Benefic';   // sextile
+    if (n >= 112 && n <= 128) return 'Benefic';   // trine
+    if (n >= 82  && n <= 98)  return 'Adverse';   // square
+    if (n >= 172 && n <= 188) return 'Adverse';   // opposition
+    return null;
+}
+
+function progText(AL, key) {
+    const text = AL?.progressions?.[key];
+    if (!text) return '';
+    return `<p style="line-height:1.8;text-align:justify;">${text}</p>`;
+}
+
+async function calcProgressions() {
+    const age = parseInt(document.getElementById('prog-age').value, 10);
+    if (!age || age < 1 || age > 120) return;
+
+    const out = document.getElementById('prog-output');
+    out.innerHTML = '<p style="color:#004466;">Calculating…</p>';
+
+    try {
+        const { swe, jd_birth, natal, cusps, asc, AL, lat, lon, housesys } = CHART;
+
+        // Progressed JD: birth JD + age days
+        const jd_prog = jd_birth + age;
+
+        // Calculate progressed planet positions
+        const PLANET_IDS = {
+            Sun:0, Moon:1, Mercury:2, Venus:3, Mars:4,
+            Jupiter:5, Saturn:6, Uranus:7, Neptune:8
+        };
+        const flags = 258; // SEFLG_SWIEPH | SEFLG_SPEED
+        const progData = {};
+        for (const [name, id] of Object.entries(PLANET_IDS)) {
+            const r = swe.calc_ut(jd_prog, id, flags);
+            if (r) {
+                const arr = Array.isArray(r) ? r : [r[0], r[1], r[2], r[3]];
+                progData[name] = { lon: ((arr[0] % 360) + 360) % 360 };
+            }
+        }
+
+        // Progressed Moon sign and house
+        const moonLon  = progData.Moon?.lon;
+        const moonSign = moonLon != null ? lonToSign(moonLon).sign : null;
+        let   moonHouse = null;
+        if (moonLon != null) {
+            moonHouse = 1;
+            for (let i = 0; i < 12; i++) {
+                const c1 = ((cusps[i] % 360) + 360) % 360;
+                const c2 = ((cusps[(i+1)%12] % 360) + 360) % 360;
+                const ml = ((moonLon % 360) + 360) % 360;
+                const inH = c1 <= c2 ? (ml >= c1 && ml < c2) : (ml >= c1 || ml < c2);
+                if (inH) { moonHouse = i + 1; break; }
+            }
+        }
+
+        // ── Find aspects ──────────────────────────────────────────────────────
+        const PLANET_ORDER = ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune'];
+        const solarAspects   = []; // progressed Sun to natal planets
+        const mutualAspects  = []; // progressed planet to natal planet (non-sun)
+        const moonAspects    = []; // progressed Moon to natal planets
+
+        for (const progName of PLANET_ORDER) {
+            if (!progData[progName]) continue;
+            const pLon = progData[progName].lon;
+
+            for (const natalName of PLANET_ORDER) {
+                if (!natal[natalName]) continue;
+                const nLon = natal[natalName].lon;
+                const diff = pLon - nLon;
+                const type = classifyProgAspect(diff);
+                if (!type) continue;
+
+                if (progName === 'Sun' && natalName !== 'Sun') {
+                    solarAspects.push({ prog: progName, natal: natalName, type });
+                } else if (progName === 'Moon' && natalName !== 'Moon') {
+                    moonAspects.push({ prog: progName, natal: natalName, type });
+                } else if (progName !== 'Sun' && progName !== 'Moon' && progName !== natalName) {
+                    // Only prog→natal, avoid duplicates (use canonical order)
+                    const pi = PLANET_ORDER.indexOf(progName);
+                    const ni = PLANET_ORDER.indexOf(natalName);
+                    if (pi !== ni) {
+                        mutualAspects.push({ prog: progName, natal: natalName, type });
+                    }
+                }
+            }
+        }
+
+        // ── Render ────────────────────────────────────────────────────────────
+        const parts = [];
+
+        parts.push(`<h3 style="color:#00CED1;">Progressed Chart — Age ${age}</h3>`);
+        parts.push(`<p style="font-size:0.85em;color:#004466;">Progressed JD ${jd_prog.toFixed(2)} · Progressed Moon: ${moonSign ? moonSign.name : '?'} (House ${moonHouse ?? '?'})</p>`);
+
+        // Progressed Moon sign
+        if (moonSign) {
+            const ms = progText(AL, `moon_sign_${moonSign.name}`);
+            if (ms) {
+                parts.push(`<h4 style="color:#00CED1;margin:16px 0 4px;">Progressed Moon in ${moonSign.glyph} ${moonSign.name}</h4>`);
+                parts.push(ms);
+            }
+        }
+
+        // Progressed Moon house
+        if (moonHouse) {
+            const mh = progText(AL, `moon_house_${moonHouse}`);
+            if (mh) {
+                parts.push(`<h4 style="color:#00CED1;margin:16px 0 4px;">Progressed Moon in House ${moonHouse}</h4>`);
+                parts.push(mh);
+            }
+        }
+
+        // Solar aspects
+        if (solarAspects.length) {
+            parts.push(`<h3 style="color:#00CED1;margin:20px 0 8px;">Solar Aspects</h3>`);
+            for (const a of solarAspects) {
+                const key = `solar_${a.prog}_${a.natal}_${a.type}`;
+                const t = progText(AL, key);
+                if (t) {
+                    const sym = a.type==='Conjunction'?'☌':a.type==='Benefic'?'△':'□';
+                    parts.push(`<h4 style="color:#00CED1;margin:12px 0 4px;font-size:0.95em;">
+                        Progressed Sun ${sym} Natal ${a.natal}
+                        <span style="color:#004466;font-weight:normal;font-size:0.85em;">(${a.type})</span>
+                    </h4>`);
+                    parts.push(t);
+                }
+            }
+        }
+
+        // Mutual / interplanetary aspects
+        if (mutualAspects.length) {
+            parts.push(`<h3 style="color:#00CED1;margin:20px 0 8px;">Interplanetary Aspects</h3>`);
+            const seen = new Set();
+            for (const a of mutualAspects) {
+                // Canonicalise key order
+                const names = [a.prog, a.natal].sort((x,y) => PLANET_ORDER.indexOf(x) - PLANET_ORDER.indexOf(y));
+                const key = `mutual_${names[0]}_${names[1]}_${a.type}`;
+                if (seen.has(key)) continue;
+                seen.add(key);
+                const t = progText(AL, key);
+                if (t) {
+                    const sym = a.type==='Conjunction'?'☌':a.type==='Benefic'?'△':'□';
+                    parts.push(`<h4 style="color:#00CED1;margin:12px 0 4px;font-size:0.95em;">
+                        Progressed ${a.prog} ${sym} ${a.natal}
+                        <span style="color:#004466;font-weight:normal;font-size:0.85em;">(${a.type})</span>
+                    </h4>`);
+                    parts.push(t);
+                }
+            }
+        }
+
+        // Lunar aspects
+        if (moonAspects.length) {
+            parts.push(`<h3 style="color:#00CED1;margin:20px 0 8px;">Lunar Aspects</h3>`);
+            for (const a of moonAspects) {
+                const key = `moon_aspect_Moon_${a.natal}_${a.type}`;
+                const t = progText(AL, key);
+                if (t) {
+                    const sym = a.type==='Conjunction'?'☌':a.type==='Benefic'?'△':'□';
+                    parts.push(`<h4 style="color:#00CED1;margin:12px 0 4px;font-size:0.95em;">
+                        Progressed Moon ${sym} Natal ${a.natal}
+                        <span style="color:#004466;font-weight:normal;font-size:0.85em;">(${a.type})</span>
+                    </h4>`);
+                    parts.push(t);
+                }
+            }
+        }
+
+        if (parts.length <= 2) {
+            parts.push('<p class="placeholder">No major progressed aspects found at this age within the standard orbs.</p>');
+        }
+
+        out.innerHTML = parts.join('');
+
+    } catch(err) {
+        out.innerHTML = `<p class="placeholder">Error calculating progressions: ${err.message}</p>`;
+    }
+}
+
+// Module-level store for progression use
+const CHART = {};
+
 async function main() {
     // Load Alan Leo texts alongside the ephemeris
     let AL = {};
@@ -560,6 +751,19 @@ async function main() {
 
         renderPage(planetData, cusps, asc, mc, AL);
 
+        // Store for progressions
+        CHART.swe       = swe;
+        CHART.jd_birth  = jd;
+        CHART.natal     = planetData;
+        CHART.cusps     = cusps;
+        CHART.asc       = asc;
+        CHART.AL        = AL;
+        CHART.lat       = lat;
+        CHART.lon       = lon;
+        CHART.housesys  = housesys;
+
+        document.getElementById('prog-btn').addEventListener('click', calcProgressions);
+
     } catch(err) {
         document.getElementById('main-content').innerHTML = `
             <section>
@@ -589,8 +793,12 @@ function whichHouse(lon, cusps) {
 // Look up Alan Leo text or return a styled placeholder
 function alText(AL, section, key) {
     const text = AL?.[section]?.[key];
-    if (text) return `<p style="line-height:1.8;text-align:justify;">${text}</p>`;
-    return `<p class="placeholder">[${section} / ${key}] — text to be added from Alan Leo's <em>The Key to Your Own Nativity</em>.</p>`;
+    if (!text) return `<p class="placeholder">[${section} / ${key}] — text to be added from Alan Leo's <em>The Key to Your Own Nativity</em>.</p>`;
+    // Pluto and Mean Node entries are explanatory notes, not Leo text — style differently
+    if (key === 'Pluto' || key === 'Mean Node') {
+        return `<p style="color:#004466;font-style:italic;border-left:2px solid #002244;padding-left:12px;">${text}</p>`;
+    }
+    return `<p style="line-height:1.8;text-align:justify;">${text}</p>`;
 }
 
 // Look up an aspect text. Tries both planet orderings.
@@ -1090,13 +1298,25 @@ function renderPage(planetData, cusps, asc, mc, AL) {
     <!-- § 7 — Progressions -->
     <section id="al-s7">
         <h2>§7 — The Progression of the Horoscope</h2>
-        <ul class="section-chapters">
-            <li><span class="chap-num">Ch. XXXV</span><span class="chap-title">The Future Prospects</span></li>
-        </ul>
-        <p style="font-size:0.85em;color:#004466;margin-top:8px;">
-            Solar aspects, interplanetary (mutual) aspects, lunar positions and aspects.
+        <p style="font-size:0.85em;color:#004466;">
+            Secondary progressions: each day after birth = one year of life. Enter an age to see
+            progressed planetary positions and aspects to the natal chart.
         </p>
-        <div class="placeholder">Progressions calculation and interpretive text — to be implemented.</div>
+        <div style="display:flex;gap:12px;align-items:center;margin:16px 0;">
+            <label for="prog-age" style="color:#00CED1;font-size:0.9em;text-transform:uppercase;letter-spacing:0.05em;">Age:</label>
+            <input type="number" id="prog-age" min="1" max="120" value="30"
+                style="width:80px;background:#000022;border:1px solid #00BFFF;color:#00BFFF;
+                       font-family:inherit;font-size:1em;padding:6px 10px;outline:none;">
+            <button id="prog-btn"
+                style="background:rgba(0,191,255,0.08);border:1px solid #00BFFF;color:#00BFFF;
+                       font-family:inherit;font-size:0.9em;padding:6px 14px;cursor:pointer;
+                       letter-spacing:0.08em;text-transform:uppercase;">
+                Calculate
+            </button>
+        </div>
+        <div id="prog-output">
+            <p class="placeholder">Enter an age above and click Calculate to see your progressed chart.</p>
+        </div>
     </section>
 
     `;
